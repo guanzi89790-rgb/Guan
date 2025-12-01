@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>GUAN.DESIGN | 罐子设计</title>
+    <!-- 1. 引入 Tailwind CSS (样式引擎) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 2. 引入 React 和 Babel (运行环境) -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- 3. 配置 Tailwind 动画 -->
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            animation: {
+              'spin-slow': 'spin 10s linear infinite',
+              'pulse-slow': 'pulse 6s ease-in-out infinite',
+              'marquee': 'marquee 20s linear infinite',
+              'fade-in': 'fadeIn 0.3s ease-out',
+            },
+            keyframes: {
+              marquee: {
+                '0%': { transform: 'translateX(0)' },
+                '100%': { transform: 'translateX(-100%)' },
+              },
+              fadeIn: {
+                'from': { opacity: '0' },
+                'to': { opacity: '1' },
+              }
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      /* 隐藏滚动条但保留功能 */
+      ::-webkit-scrollbar { width: 0px; background: transparent; }
+      body { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+  </head>
+  <body class="bg-[#f0f2f5]">
+    <div id="root"></div>
+
+    <!-- 4. 网站核心代码 -->
+    <script type="text/babel">
+      const { useState, useEffect, useRef } = React;
+
+      // 图标组件 (手动构建 SVG 以避免复杂的 CDN 依赖)
+      const Icons = {
+        ArrowLeft: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>,
+        Menu: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="18" y2="18"/></svg>,
+        X: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
+        Globe: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>,
+        MapPin: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>,
+        Phone: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>,
+        Mail: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>,
+        Github: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></svg>,
+        Cpu: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M15 2v2"/><path d="M15 20v2"/><path d="M2 15h2"/><path d="M2 9h2"/><path d="M20 15h2"/><path d="M20 9h2"/><path d="M9 2v2"/><path d="M9 20v2"/></svg>,
+        PenTool: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>,
+        Scan: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/></svg>,
+        MoveUpRight: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M13 5H19V11"/><path d="M19 5L5 19"/></svg>,
+        Box: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>,
+        Plus: ({size=24, className=""}) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+      };
+
+      const translations = {
+        zh: {
+          nav: { home: '首页', work: '作品', service: '服务', about: '关于' },
+          hero: {
+            slogan: ['保持', '创意', '鲜活'],
+            desc: '我们在数字真空中构建容器。保存稍纵即逝的灵感，直到它们发酵成为具有破坏力的视觉语言。',
+            scroll: '向下探索',
+            est: '成立于 2024'
+          },
+          marquee: '视觉档案库 /// VISUAL ARCHIVE /// ',
+          works: {
+            title: '精选案例',
+            viewAll: '查看全部',
+            back: '返回列表',
+            next: '下一个项目',
+            role: '角色',
+            date: '时间',
+            brief: '项目简介',
+            source: '开源地址',
+            aiSection: 'AI 介入',
+            designSection: '设计工艺'
+          },
+          method: {
+            title: ['我们的', '方法论'],
+            steps: [
+              { title: '封装 / SEAL', desc: '将抽象的品牌策略转化为具象的视觉符号，锁住核心价值。' },
+              { title: '发酵 / FERMENT', desc: '利用生成式 AI 作为催化剂，让创意在容器内进行裂变与迭代。' },
+              { title: '开启 / OPEN', desc: '交付具有冲击力的品牌体验，像打开菠菜罐头一样注入能量。' }
+            ]
+          },
+          footer: {
+            cta: ['让创意', '开罐即食'],
+            address: '中国新疆乌鲁木齐 / Urumqi, Xinjiang, CN',
+            rights: '© 2024 罐子设计 (GUAN DESIGN) 保留所有权利。',
+            wechat: '扫码添加'
+          }
+        },
+        en: {
+          nav: { home: 'HOME', work: 'WORK', service: 'SERVICES', about: 'ABOUT' },
+          hero: {
+            slogan: ['KEEP', 'IDEAS', 'FRESH'],
+            desc: 'Building vessels in the digital vacuum. Preserving fleeting inspiration until it ferments into disruptive visual language.',
+            scroll: 'SCROLL TO EXPLORE',
+            est: 'EST. 2024'
+          },
+          marquee: 'VISUAL ARCHIVE /// VISUAL ARCHIVE /// ',
+          works: {
+            title: 'SELECTED WORKS',
+            viewAll: 'VIEW ALL',
+            back: 'BACK TO LIST',
+            next: 'NEXT PROJECT',
+            role: 'ROLE',
+            date: 'DATE',
+            brief: 'BRIEF',
+            source: 'SOURCE CODE',
+            aiSection: 'AI WORKFLOW',
+            designSection: 'DESIGN CRAFT'
+          },
+          method: {
+            title: ['OUR', 'METHOD'],
+            steps: [
+              { title: 'SEAL', desc: 'Transforming abstract strategies into tangible visual symbols.' },
+              { title: 'FERMENT', desc: 'Using generative AI as a catalyst for creative fission and iteration.' },
+              { title: 'OPEN', desc: 'Delivering impactful brand experiences, like opening a can of spinach.' }
+            ]
+          },
+          footer: {
+            cta: ["LET'S CAN", 'IT UP'],
+            address: 'Urumqi, Xinjiang, CN / China',
+            rights: '© 2024 GUAN DESIGN. ALL RIGHTS RESERVED.',
+            wechat: 'SCAN TO ADD'
+          }
+        }
+      };
+
+      const projects = [
+        { 
+          id: '01', 
+          title: '艺术的保鲜', 
+          titleEn: 'ART PRESERVATION',
+          category: 'BRANDING', 
+          year: '2023',
+          desc: 'A complete rebranding for a contemporary art museum in Urumqi, focusing on the concept of "Time Capsule".',
+          aiInfo: 'Utilized Midjourney v6 for initial concept visualization of "Time Capsules". Custom LoRA models trained on local Xinjiang textures were used to generate unique background patterns.',
+          designInfo: 'The typography is a bespoke modification of Helvetica, creating a stark contrast with the organic AI-generated textures. The logo system is dynamic, changing based on the time of day.',
+          img: 'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?q=80&w=2670&auto=format&fit=crop',
+          detailImgs: [
+            'https://images.unsplash.com/photo-1507643179173-617d65421d01?q=80&w=2488&auto=format&fit=crop',
+            'https://images.unsplash.com/photo-1604871000636-074fa5117945?q=80&w=2487&auto=format&fit=crop'
+          ]
+        },
+        { 
+          id: '02', 
+          title: '数字标本', 
+          titleEn: 'DIGITAL SPECIMEN',
+          category: 'WEBGL', 
+          year: '2024',
+          desc: 'An interactive WebGL experience exploring the microscopic details of digital flora.',
+          aiInfo: 'Stable Diffusion was used to generate 1000+ variations of "digital flora". Depth maps were extracted using MiDaS and imported into Three.js for 3D displacement.',
+          designInfo: 'A minimalist UI overlay ensures the focus remains on the specimens. Interaction design mimics a laboratory microscope, with smooth zoom and focus controls.',
+          img: 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop',
+          detailImgs: [
+            'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?q=80&w=2670&auto=format&fit=crop',
+            'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2670&auto=format&fit=crop'
+          ]
+        },
+        { 
+          id: '03', 
+          title: '无机生长', 
+          titleEn: 'INORGANIC GROWTH',
+          category: 'INSTALLATION', 
+          year: '2024',
+          desc: 'Physical installation using recycled metal cans and projection mapping.',
+          aiInfo: 'Generative adversarial networks (GANs) created the growing patterns projected onto the physical cans. The animation loops are seamless and infinite.',
+          designInfo: 'Industrial design meets digital art. The physical cans were stripped of labels and polished to act as perfect canvases for the high-contrast projections.',
+          img: 'https://images.unsplash.com/photo-1604871000636-074fa5117945?q=80&w=2487&auto=format&fit=crop',
+          detailImgs: [
+            'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2670&auto=format&fit=crop',
+            'https://images.unsplash.com/photo-1535378472929-375c3639d48b?q=80&w=2000&auto=format&fit=crop'
+          ]
+        },
+        { 
+          id: '04', 
+          title: '空白档案', 
+          titleEn: 'BLANK ARCHIVE',
+          category: 'EDITORIAL', 
+          year: '2023',
+          desc: 'Minimalist editorial design for a fashion magazine.',
+          aiInfo: 'AI text-to-image models assisted in creating surreal fashion accessories that do not exist in reality, blending them seamlessly with real model photography.',
+          designInfo: 'Swiss style layout with extreme negative space. The grid system is rigid but broken intentionally by the AI elements to create visual tension.',
+          img: 'https://images.unsplash.com/photo-1507643179173-617d65421d01?q=80&w=2488&auto=format&fit=crop',
+          detailImgs: [
+            'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?q=80&w=2670&auto=format&fit=crop',
+            'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop'
+          ]
+        },
+        {
+          id: '05',
+          title: '生成式UI套件',
+          titleEn: 'GENERATIVE UI KIT',
+          category: 'OPEN SOURCE',
+          year: '2024',
+          isGithub: true,
+          desc: 'An open-source React component library for generative art interfaces.',
+          aiInfo: 'Copilot and GPT-4 were used to refactor complex React hooks and optimize WebGL shaders for performance.',
+          designInfo: 'The UI components feature a "glassmorphism" aesthetic with noise textures, designed to sit unobtrusively on top of complex generative visuals.',
+          img: 'https://images.unsplash.com/photo-1634152962476-4b8a00e1915c?q=80&w=2576&auto=format&fit=crop',
+          detailImgs: [
+            'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=2670&auto=format&fit=crop'
+          ]
+        },
+        {
+          id: '06',
+          title: '着色器实验室',
+          titleEn: 'SHADER LAB',
+          category: 'OPEN SOURCE',
+          year: '2023',
+          isGithub: true,
+          desc: 'A collection of GLSL shaders for web designers. Starred 1.2k on GitHub.',
+          aiInfo: 'AI was used to translate mathematical formulas into GLSL code, speeding up the prototyping of complex fluid dynamics simulations.',
+          designInfo: 'A dark-mode first interface that highlights code syntax and live previews. The typography uses a custom monospaced font for readability.',
+          img: 'https://images.unsplash.com/photo-1550684848-fac1c5b4e853?q=80&w=2670&auto=format&fit=crop',
+          detailImgs: [
+            'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop'
+          ]
+        }
+      ];
+
+      // Popeye Can Logo SVG
+      const PopeyeCanLogo = ({ className = "w-12 h-12" }) => (
+        <svg viewBox="0 0 100 100" className={className} fill="none" stroke="currentColor" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 30 V 85 Q 50 95 80 85 V 30" />
+          <path d="M20 85 Q 50 75 80 85" />
+          <ellipse cx="50" cy="30" rx="30" ry="10" />
+          <path d="M30 25 L 25 10 L 40 15 L 50 5 L 60 15 L 75 10 L 70 25" className="animate-pulse" />
+          <path d="M35 50 H 65" strokeWidth="3" />
+          <path d="M35 60 H 65" strokeWidth="3" />
+          <path d="M45 70 H 55" strokeWidth="3" />
+        </svg>
+      );
+
+      // Glassmorphic Card
+      const GlassCard = ({ children, className = "" }) => (
+        <div className={`backdrop-blur-xl bg-white/40 border border-white/50 shadow-[0_8px_32px_0_rgba(31,38,135,0.07)] ${className}`}>
+          {children}
+        </div>
+      );
+
+      // Floating Background Blobs
+      const FloatingBlobs = () => (
+        <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-blue-400/20 rounded-full blur-[120px] animate-pulse-slow"></div>
+          <div className="absolute bottom-[-10%] right-[-10%] w-[50vw] h-[50vw] bg-purple-400/10 rounded-full blur-[120px] animate-pulse-slow delay-1000"></div>
+        </div>
+      );
+
+      // 3D Rotating Object (Can)
+      const RotatingCan3D = ({ mouseX, mouseY }) => {
+        const [rotation, setRotation] = useState({ x: 0, y: 0 });
+        useEffect(() => {
+          const rotX = (mouseY / window.innerHeight - 0.5) * 30;
+          const rotY = (mouseX / window.innerWidth - 0.5) * 60;
+          setRotation({ x: -rotX, y: rotY });
+        }, [mouseX, mouseY]);
+
+        return (
+          <div className="relative w-64 h-80 md:w-80 md:h-96" style={{ perspective: '1000px' }}>
+            <div className="w-full h-full relative" style={{ transformStyle: 'preserve-3d', transform: `rotateX(${10 + rotation.x}deg) rotateY(${rotation.y}deg)`, transition: 'transform 0.1s ease-out' }}>
+              <div className="absolute inset-0 border-4 border-black/80 backdrop-blur-md bg-white/20 flex items-center justify-center transform translate-z-[40px] shadow-2xl rounded-sm">
+                 <div className="flex flex-col items-center gap-4">
+                   <PopeyeCanLogo className="w-32 h-32 text-blue-600" />
+                   <div className="text-4xl font-black tracking-tighter text-black">POWER</div>
+                 </div>
+              </div>
+              <div className="absolute inset-0 border-4 border-black/20 bg-gray-200/50 flex items-center justify-center transform translate-z-[-40px] translate-x-[20px] opacity-40 rounded-sm"></div>
+            </div>
+          </div>
+        );
+      };
+
+      const Marquee = ({ text }) => (
+        <div className="overflow-hidden border-y border-black bg-blue-600 text-white py-4 flex whitespace-nowrap relative z-10 backdrop-blur-md bg-blue-600/90">
+          <div className="flex animate-marquee">
+            {[...Array(10)].map((_, i) => (
+              <span key={i} className="text-2xl md:text-4xl font-black italic tracking-tighter mx-8">
+                {text}
+              </span>
+            ))}
+          </div>
+        </div>
+      );
+
+      const ProjectItem = ({ project, index, onClick }) => (
+        <div onClick={onClick} className="group border-b border-black/10 relative overflow-hidden transition-all duration-500 cursor-pointer hover:backdrop-blur-3xl hover:bg-white/60">
+          <div className="px-6 md:px-12 py-12 md:py-16 flex flex-col md:flex-row justify-between items-start md:items-center relative z-20">
+            <div className="flex items-start gap-8">
+              <span className="font-mono text-sm opacity-50">0{index + 1}</span>
+              <div>
+                <h3 className="text-3xl md:text-6xl font-black tracking-tighter mb-2 group-hover:translate-x-4 transition-transform duration-500 uppercase flex items-center gap-4 group-hover:text-blue-600">
+                   {project.titleEn}
+                   {project.isGithub && <Icons.Github size={24} className="text-gray-400 group-hover:text-blue-600" />}
+                </h3>
+                <p className="font-mono text-sm tracking-widest text-gray-600">{project.title}</p>
+              </div>
+            </div>
+            <div className="mt-8 md:mt-0 flex items-center gap-4">
+               <span className={`font-mono text-xs border border-current px-3 py-1 rounded-full uppercase ${project.isGithub ? 'bg-gray-100 text-black' : ''}`}>
+                 {project.category}
+               </span>
+               <Icons.MoveUpRight size={24} className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-600" />
+            </div>
+          </div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[250px] opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-500 z-10 hidden md:block">
+            <div className="w-full h-full overflow-hidden rounded-lg shadow-2xl transform rotate-3 scale-90 group-hover:rotate-0 group-hover:scale-100 transition-all duration-500">
+               <img src={project.img} alt={project.title} className="w-full h-full object-cover" />
+            </div>
+          </div>
+        </div>
+      );
+
+      /* --- PAGES --- */
+
+      const HomePage = ({ t, setPage, mousePos }) => (
+        <React.Fragment>
+          <header className="relative min-h-screen flex flex-col justify-between pt-32 pb-12 px-6 md:px-12 border-b border-black/10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 h-full items-center">
+              <div className="z-10">
+                <h1 className="text-6xl md:text-[9vw] leading-[0.85] font-black tracking-tighter mb-8 mix-blend-darken">
+                  {t.hero.slogan[0]} <br/>
+                  {t.hero.slogan[1]} <br/>
+                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">{t.hero.slogan[2]}.</span>
+                </h1>
+                <GlassCard className="max-w-md font-mono text-sm md:text-base leading-relaxed p-6 rounded-lg backdrop-blur-md">
+                  <p className="mb-2 font-bold uppercase text-blue-600">{t.hero.est}</p>
+                  <p className="text-gray-700">{t.hero.desc}</p>
+                </GlassCard>
+              </div>
+              <div className="flex justify-center items-center h-[50vh] lg:h-auto">
+                 <RotatingCan3D mouseX={mousePos.x} mouseY={mousePos.y} />
+              </div>
+            </div>
+            <div className="absolute bottom-6 left-6 md:left-12 flex gap-4 text-xs font-mono tracking-widest uppercase animate-bounce text-gray-500">
+               <span>{t.hero.scroll}</span>
+               <span>↓</span>
+            </div>
+          </header>
+
+          <Marquee text={t.marquee} />
+
+          <section className="relative z-10">
+            <div className="px-6 md:px-12 py-8 border-b border-black/10 flex justify-between items-center bg-white/50 backdrop-blur-sm sticky top-20 z-20">
+               <h2 className="text-sm font-mono tracking-widest uppercase flex items-center gap-2 font-bold text-gray-800">
+                 <Icons.Box size={14} /> 
+                 {t.works.title}
+               </h2>
+               <button onClick={() => setPage('works')} className="text-xs hover:bg-blue-600 hover:text-white px-4 py-2 border border-black transition-colors uppercase font-mono rounded-full">
+                 {t.works.viewAll}
+               </button>
+            </div>
+            <div className="bg-white/30 backdrop-blur-sm">
+              {projects.slice(0, 4).map((p, i) => (
+                <ProjectItem key={p.id} project={p} index={i} onClick={() => setPage(`project-${p.id}`)} />
+              ))}
+            </div>
+          </section>
+
+          <section className="grid grid-cols-1 md:grid-cols-2 min-h-[60vh] relative z-10">
+            <div className="bg-black/95 text-white p-12 md:p-24 flex flex-col justify-between backdrop-blur-md">
+              <h2 className="text-5xl md:text-7xl font-bold tracking-tighter uppercase bg-gradient-to-br from-white to-gray-500 bg-clip-text text-transparent">
+                {t.method.title[0]} <br/> {t.method.title[1]}
+              </h2>
+              <div className="w-20 h-20 border-2 border-white/20 rounded-full flex items-center justify-center animate-spin-slow mt-12 bg-white/5 backdrop-blur-lg">
+                <Icons.Plus size={32}/>
+              </div>
+            </div>
+            <div className="bg-blue-600/90 text-white p-12 md:p-24 flex flex-col justify-center gap-16 backdrop-blur-md">
+              {t.method.steps.map((item, i) => (
+                <div key={i} className="group cursor-default">
+                   <h3 className="text-2xl md:text-3xl font-black mb-2 flex items-center gap-4 group-hover:translate-x-2 transition-transform">
+                     <span className="text-sm font-mono border border-white/30 rounded-full w-8 h-8 flex items-center justify-center group-hover:bg-white group-hover:text-blue-600 transition-colors">0{i+1}</span>
+                     {item.title}
+                   </h3>
+                   <p className="font-mono text-sm opacity-80 pl-12 max-w-sm border-l border-white/20 ml-4">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </React.Fragment>
+      );
+
+      const WorksPage = ({ t, setPage }) => (
+        <div className="pt-32 min-h-screen relative z-10">
+          <div className="px-6 md:px-12 mb-12 flex items-center gap-4">
+            <button onClick={() => setPage('home')} className="hover:-translate-x-2 transition-transform p-2 bg-white/50 rounded-full backdrop-blur-sm">
+              <Icons.ArrowLeft size={32} />
+            </button>
+            <h1 className="text-6xl md:text-8xl font-black tracking-tighter uppercase mix-blend-darken">{t.works.title}</h1>
+          </div>
+          <div className="border-t border-black/10 bg-white/30 backdrop-blur-sm">
+            {projects.map((p, i) => (
+              <ProjectItem key={p.id} project={p} index={i} onClick={() => setPage(`project-${p.id}`)} />
+            ))}
+          </div>
+        </div>
+      );
+
+      const ProjectDetailPage = ({ t, projectId, setPage }) => {
+        const project = projects.find(p => p.id === projectId);
+        if (!project) return null;
+
+        return (
+          <div className="pt-32 min-h-screen bg-white/50 backdrop-blur-sm relative z-10">
+            <div className="px-6 md:px-12 mb-12">
+              <button onClick={() => setPage('works')} className="flex items-center gap-2 font-mono text-xs uppercase mb-8 hover:text-blue-600 px-4 py-2 bg-white/80 rounded-full w-fit backdrop-blur-md shadow-sm">
+                <Icons.ArrowLeft size={14} /> {t.works.back}
+              </button>
+              <h1 className="text-5xl md:text-8xl font-black tracking-tighter uppercase mb-4 flex items-center gap-4 text-gray-900">
+                {project.titleEn}
+                {project.isGithub && <Icons.Github size={48} className="text-gray-300" />}
+              </h1>
+              <h2 className="text-2xl md:text-4xl font-bold text-gray-400 mb-8">{project.title}</h2>
+              
+              <GlassCard className="flex flex-wrap gap-12 font-mono text-sm p-8 rounded-xl">
+                 <div>
+                   <span className="block text-gray-400 mb-1">{t.works.role}</span>
+                   <span className="uppercase font-bold">{project.category}</span>
+                 </div>
+                 <div>
+                   <span className="block text-gray-400 mb-1">{t.works.date}</span>
+                   <span className="font-bold">{project.year}</span>
+                 </div>
+                 {project.isGithub && (
+                    <div className="flex items-center gap-2">
+                       <span className="block text-gray-400 mb-1">{t.works.source}</span>
+                       <a href="#" className="underline font-bold hover:text-blue-600 text-blue-500">GITHUB LINK {'>'}</a>
+                    </div>
+                 )}
+              </GlassCard>
+            </div>
+
+            <div className="w-full h-[60vh] overflow-hidden relative group">
+              <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity z-10 mix-blend-overlay"></div>
+              <img src={project.img} className="w-full h-full object-cover" alt="Main" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-12 px-6 md:px-12 py-24">
+              <div className="md:col-span-4 sticky top-32 h-fit">
+                 <h3 className="text-sm font-mono uppercase text-blue-600 mb-4 font-bold border-b border-blue-600/30 pb-2">{t.works.brief}</h3>
+                 <p className="text-xl leading-relaxed font-medium text-gray-800">{project.desc}</p>
+              </div>
+              
+              <div className="md:col-span-8 grid gap-12">
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <GlassCard className="p-8 rounded-xl hover:shadow-lg transition-shadow">
+                     <div className="flex items-center gap-3 mb-4 text-purple-600">
+                       <Icons.Cpu size={24} />
+                       <h4 className="font-black font-mono uppercase">{t.works.aiSection}</h4>
+                     </div>
+                     <p className="text-sm text-gray-600 leading-relaxed">{project.aiInfo}</p>
+                   </GlassCard>
+                   
+                   <GlassCard className="p-8 rounded-xl hover:shadow-lg transition-shadow">
+                     <div className="flex items-center gap-3 mb-4 text-blue-600">
+                       <Icons.PenTool size={24} />
+                       <h4 className="font-black font-mono uppercase">{t.works.designSection}</h4>
+                     </div>
+                     <p className="text-sm text-gray-600 leading-relaxed">{project.designInfo}</p>
+                   </GlassCard>
+                 </div>
+
+                 {project.detailImgs.map((img, idx) => (
+                   <div key={idx} className="relative rounded-lg overflow-hidden shadow-xl group">
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                      <img src={img} className="w-full grayscale hover:grayscale-0 transition-all duration-700" alt="Detail" />
+                   </div>
+                 ))}
+              </div>
+            </div>
+
+            <div className="bg-black text-white py-24 text-center cursor-pointer hover:bg-blue-600 transition-colors" onClick={() => setPage('works')}>
+              <p className="font-mono text-sm mb-4">{t.works.next}</p>
+              <h3 className="text-4xl md:text-6xl font-black italic">KEEP EXPLORING {'>'}</h3>
+            </div>
+          </div>
+        );
+      };
+
+      /* --- APP ROOT --- */
+      const App = () => {
+        const [page, setPage] = useState('home'); 
+        const [lang, setLang] = useState('zh');
+        const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+        const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+        const t = translations[lang];
+
+        useEffect(() => {
+          const handleMouseMove = (e) => setMousePos({ x: e.clientX, y: e.clientY });
+          window.addEventListener('mousemove', handleMouseMove);
+          return () => window.removeEventListener('mousemove', handleMouseMove);
+        }, []);
+
+        const renderContent = () => {
+          if (page === 'home') return <HomePage t={t} setPage={setPage} mousePos={mousePos} />;
+          if (page === 'works') return <WorksPage t={t} setPage={setPage} />;
+          if (page.startsWith('project-')) return <ProjectDetailPage t={t} projectId={page.split('-')[1]} setPage={setPage} />;
+          return <HomePage t={t} setPage={setPage} mousePos={mousePos} />; 
+        };
+
+        return (
+          <div className="bg-[#f0f2f5] text-black min-h-screen font-sans selection:bg-blue-600 selection:text-white overflow-x-hidden transition-colors duration-500">
+            <FloatingBlobs />
+
+            <nav className="fixed top-0 left-0 w-full px-6 py-4 md:px-12 md:py-6 flex justify-between items-center z-50 bg-white/70 backdrop-blur-xl border-b border-white/20 shadow-sm">
+              <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setPage('home')}>
+                <div className="flex flex-col leading-none group-hover:skew-x-6 transition-transform">
+                  <span className="text-xl md:text-2xl font-black tracking-tighter text-black">GUAN.</span>
+                  <span className="text-[10px] tracking-[0.2em] font-bold uppercase text-blue-600">DESIGN</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-6">
+                <div className="flex gap-1 p-1 bg-gray-100/50 rounded-lg backdrop-blur-sm">
+                  <button onClick={() => setLang('en')} className={`text-[10px] font-bold px-3 py-1.5 rounded-md transition-all ${lang === 'en' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-black'}`}>EN</button>
+                  <button onClick={() => setLang('zh')} className={`text-[10px] font-bold px-3 py-1.5 rounded-md transition-all ${lang === 'zh' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-500 hover:text-black'}`}>中</button>
+                </div>
+                <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="flex items-center gap-2 group cursor-pointer border border-black/10 px-4 py-2 hover:bg-black hover:text-white transition-colors rounded-full bg-white/50 backdrop-blur-sm">
+                  <span className="text-xs font-mono font-bold tracking-widest hidden md:block">{isMenuOpen ? 'CLOSE' : 'MENU'}</span>
+                  {isMenuOpen ? <Icons.X size={18}/> : <Icons.Menu size={18}/>}
+                </button>
+              </div>
+            </nav>
+            
+            {isMenuOpen && (
+              <div className="fixed inset-0 bg-blue-600/95 z-40 flex flex-col justify-center items-center text-white animate-fade-in backdrop-blur-xl">
+                {[{ k: 'home', l: t.nav.home }, { k: 'works', l: t.nav.work }, { k: 'service', l: t.nav.service }, { k: 'about', l: t.nav.about }].map((item) => (
+                   <button key={item.k} onClick={() => { setPage(item.k === 'service' || item.k === 'about' ? 'home' : item.k); setIsMenuOpen(false); }} className="text-6xl md:text-8xl font-black tracking-tighter hover:text-black hover:italic transition-all mb-4 uppercase">{item.l}</button>
+                ))}
+                <div className="mt-12 font-mono text-sm tracking-widest opacity-70 uppercase">{t.footer.address}</div>
+              </div>
+            )}
+
+            <main className="min-h-screen relative z-10">{renderContent()}</main>
+
+            <footer className="bg-white/80 backdrop-blur-lg text-black pt-24 pb-12 px-6 md:px-12 border-t border-black/10 relative z-10">
+              <div className="flex flex-col md:flex-row justify-between items-start mb-24 gap-12">
+                 <div className="flex-1">
+                   <h2 className="text-[8vw] leading-none font-black tracking-tighter hover:text-blue-600 transition-colors cursor-pointer uppercase mb-12">
+                     {t.footer.cta[0]} <br/> {t.footer.cta[1]}.
+                   </h2>
+                 </div>
+                 
+                 <div className="flex flex-col items-start md:items-end gap-12">
+                    <GlassCard className="p-4 rounded-xl flex flex-col items-center gap-2 max-w-[200px] hover:scale-105 transition-transform">
+                       <div className="w-32 h-32 bg-gray-200 rounded-lg overflow-hidden relative group">
+                          <img src="./ScreenShot_2025-11-30_200721_826.png" 
+                               onError={(e) => { e.target.onerror = null; e.target.src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=WxID:GUAN_DESIGN"; }} 
+                               alt="WeChat QR" className="w-full h-full object-cover mix-blend-multiply opacity-80"/>
+                          <div className="absolute inset-0 flex items-center justify-center bg-blue-600/90 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <Icons.Scan className="text-white w-8 h-8" />
+                          </div>
+                       </div>
+                       <span className="text-[10px] font-bold font-mono text-gray-500 uppercase tracking-widest">{t.footer.wechat}</span>
+                    </GlassCard>
+
+                   <div className="flex flex-col items-start md:items-end gap-3 text-right">
+                      <a href="mailto:guanzi89790@gmail.com" className="text-lg md:text-xl font-bold underline decoration-2 decoration-blue-600 underline-offset-4 hover:bg-black hover:text-white transition-all px-2">guanzi89790@gmail.com</a>
+                      <a href="tel:19999112204" className="text-lg md:text-xl font-bold hover:text-blue-600 transition-colors flex items-center gap-2"><Icons.Phone size={18} className="text-blue-600"/>19999112204</a>
+                      <div className="flex items-center gap-2 font-mono text-xs font-bold uppercase mt-2 text-gray-500"><Icons.MapPin size={12} className="text-blue-600" /><p>{t.footer.address}</p></div>
+                   </div>
+                 </div>
+              </div>
+
+              <div className="flex flex-col md:flex-row justify-between items-center border-t border-black/10 pt-8 text-xs font-mono tracking-widest uppercase gap-4 text-gray-500">
+                <p>{t.footer.rights}</p>
+                <div className="flex gap-6">
+                  <a href="#" className="hover:text-blue-600 font-bold">WeChat</a>
+                  <a href="#" className="hover:text-blue-600 font-bold">Instagram</a>
+                  <a href="#" className="hover:text-blue-600 font-bold">Redbook</a>
+                </div>
+              </div>
+            </footer>
+          </div>
+        );
+      };
+
+      const root = ReactDOM.createRoot(document.getElementById('root'));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
